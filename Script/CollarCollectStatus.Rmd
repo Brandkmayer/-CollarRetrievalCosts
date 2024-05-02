@@ -1,0 +1,35 @@
+---
+title: "CollarRetrivalTime"
+author: "Brandon Mayer"
+date: "2024-05-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(tidyverse)
+Virtual_Fence_Collar_Collection_Responses_Form_Responses_1 <- read_csv("Data/Virtual Fence Collar Collection (Responses) - Form Responses 1.csv")
+
+Virtual_Fence_Collar_Collection_Responses_Form_Responses_1 %>%
+  na.omit() %>% mutate(Date = lubridate::mdy(`Enter the date you searched for the collar:`),
+                         Time = as.POSIXct(`Enter the time when the collar was found:`, format = "%H:%M:%S"),
+                         Minutes = minutes(`Approximately how long (in minutes) did you spend looking for that collar?`),TAdjusted = Time-Minutes) %>% 
+  select(-Timestamp,-`Enter the last 4 digits of the collar id that you searched for:`) %>%group_by(Date) %>% arrange(Date,`Enter the time when the collar was found:`) %>%
+  mutate(num_rows = n()) %>%
+  filter(num_rows > 1) %>% summarise(first_time = first(TAdjusted),
+              last_time = last(Time),
+              time_diff = difftime(last_time, first_time, units = "hours"),
+              collars =n(),
+              rate = collars/as.numeric(time_diff)) %>% ungroup() %>% summarise(TotalTime = sum(time_diff),
+                                                                                AverageTime = round(mean(time_diff),
+                                                                                                    digits = 2),
+                                                                                AverageRate = round(mean(rate),
+                                                                                                    digits = 1), 
+                                                                                SDRate = round(sd(rate),digits = 1))
+unique(Virtual_Fence_Collar_Collection_Responses_Form_Responses_1$`Enter the last 4 digits of the collar id that you searched for:`)
+```
+
